@@ -1,0 +1,71 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -r requirements.txt
+
+    # 构建前端
+    - name: Build Frontend
+      run: |
+        pyinstaller --onefile --windowed --name main pyqt_main.py
+
+    # 构建后端
+    - name: Build Backend
+      run: |
+        pyinstaller --onefile --name run run.py
+
+    # 创建发布包目录，并复制文件
+    - name: Prepare Release Assets
+      run: |
+        mkdir release
+        cp dist/main.exe release/
+        cp dist/run.exe release/
+        # 创建启动脚本
+        echo "@echo off" > release/start.bat
+        echo "start run.exe" >> release/start.bat
+        echo "start main.exe" >> release/start.bat
+        # 复制其他必要文件（如配置文件、模型文件等，根据实际需要）
+        # 压缩发布包
+        7z a release.zip .\release\*
+
+    # 创建Release并上传发布包
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./release.zip
+        asset_name: release.zip
+        asset_content_type: application/zip

@@ -3,6 +3,7 @@ from multiprocessing.connection import answer_challenge
 from exceptiongroup import catch
 from flask import Flask, request, render_template, jsonify, current_app, Response, stream_with_context
 import subprocess
+from pathlib import Path
 import json
 import faiss
 import time
@@ -23,8 +24,6 @@ from datetime import datetime
 from langchain_core.documents import Document
 import re
 from langchain_ollama import OllamaLLM
-from pythonFile.PDFToJSON import pdf_to_md
-from pythonFile.getRagFileList import get_ragfile_list_method
 # 线程锁，用来优化第一次部署的时间
 from threading import Lock
 # 异步任务处理（用于解决提问时调用大语言模型搜素速度太慢，最大线程：4）
@@ -35,8 +34,6 @@ from langchain_core.runnables import RunnablePassthrough
 executor = ThreadPoolExecutor(max_workers=2)
 # 用于解决，新线程无法自动继承 Flask 的应用上下文导致ask方法调用configure_llm_chain方法的数据库时会出错
 from flask import copy_current_request_context
-# git转md
-from pythonFile.gitToMd import *
 # 代码差异对比
 import difflib  # 用于代码差异对比
 # 模型缓存单例
